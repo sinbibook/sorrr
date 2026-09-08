@@ -164,27 +164,24 @@
 
   // MAPPER: roomtypes[].name → [data-rooms-submenu] (data-room-menu-link 앵커 뒤에 li 동적 생성)
   HeaderFooterMapper.prototype.mapRoomMenu = function () {
-    var roomtypes = this.getRoomtypes();
+    var self = this;
+    var roomItems = this.getRoomMenuItems(this.getRoomtypes(), function (rt) { return (rt && rt.name) || ''; });
     document.querySelectorAll('[data-rooms-submenu]').forEach(function (container) {
-      // 이전 생성분 제거 (preview 재렌더 대비)
-      container.querySelectorAll('[data-generated="room"]').forEach(function (li) {
-        li.remove();
-      });
-      roomtypes.forEach(function (rt) {
-        // 이름 없는 객실타입은 빈 메뉴 항목(여백)이 되므로 건너뜀
-        if (!rt.name || !rt.name.trim()) return;
+      container.querySelectorAll('[data-generated="room"]').forEach(function (li) { li.remove(); });
+      roomItems.forEach(function (item) {
+        var name = self.getRoomMenuLabel(item);
+        if (!String(name).trim()) return;
         var li = document.createElement('li');
         li.setAttribute('data-generated', 'room');
         var a = document.createElement('a');
-        a.href = 'room.html?room_id=' + rt.id;
-        a.textContent = rt.name;
+        a.href = self.getRoomMenuLink(item);
+        a.textContent = name;
         li.appendChild(a);
         container.appendChild(li);
       });
     });
   };
 
-  // MAPPER: property.facilities[].name → [data-facility-menu-link] (컨테이너 비우고 li 동적 생성)
   HeaderFooterMapper.prototype.mapFacilityMenu = function () {
     var facilities = this.getProperty().facilities || [];
     document.querySelectorAll('[data-facility-menu-link]').forEach(function (container) {

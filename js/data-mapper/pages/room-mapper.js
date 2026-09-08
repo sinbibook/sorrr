@@ -138,25 +138,38 @@
     if (!nav) return;
     var current = this.getCurrentRoomtype();
     var currentId = current && current.id;
-    nav.querySelectorAll('[data-generated="nav"]').forEach(function (li) {
-      li.remove();
+    nav.querySelectorAll('[data-generated="nav"]').forEach(function (li) { li.remove(); });
+    var self = this;
+    var roomItems = this.getRoomMenuItems(this.getRoomtypes(), function (rt) { return (rt && rt.name) || ''; });
+    // 그룹 안이면 그 그룹의 객실만 펼친다.
+    // 헤더/미리보기 메뉴는 그룹명 하나로 접히고 클릭 시 그룹의 첫 객실로 들어가는데,
+    // 이 탭까지 접혀 있으면 2번째 객실부터는 UI 로 도달할 방법이 없다.
+    // 멤버가 1실인 그룹은 펼치지 않는다(항목이 하나뿐이라 의미가 없다).
+    var activeGroup = null;
+    roomItems.forEach(function (it) {
+      var members = (it && it.roomtypes) || [];
+      if (members.length > 1 && self.isRoomMenuItemActive(it, currentId)) activeGroup = it;
     });
-    this.getRoomtypes().forEach(function (rt) {
-      if (!rt.name || !rt.name.trim()) return;
-      var isCurrent = String(rt.id) === String(currentId);
+    if (activeGroup) {
+      roomItems = activeGroup.roomtypes.map(function (rt) {
+        return { label: (rt && rt.name) || '', roomtype: rt, roomtypes: [rt] };
+      });
+    }
+    roomItems.forEach(function (item) {
+      var name = self.getRoomMenuLabel(item);
+      if (!String(name).trim()) return;
       var li = document.createElement('li');
       li.setAttribute('data-generated', 'nav');
-      if (isCurrent) li.className = 'active';
+      if (self.isRoomMenuItemActive(item, currentId)) li.className = 'active';
       var a = document.createElement('a');
-      a.href = 'room.html?room_id=' + rt.id;
-      if (isCurrent) a.className = 'on';
-      a.textContent = rt.name;
+      a.href = self.getRoomMenuLink(item);
+      if (self.isRoomMenuItemActive(item, currentId)) a.className = 'on';
+      a.textContent = name;
       li.appendChild(a);
       nav.appendChild(li);
     });
   };
 
-  // MAPPER: 이름/구조 + 대표이미지/썸네일 (info)
   RoomMapper.prototype.mapInfo = function () {
     var rt = this.getCurrentRoomtype();
     var room = this.getMatchedRoom(rt);
@@ -169,7 +182,7 @@
     var mainEl = document.querySelector('[data-room-image-main]');
     if (mainEl) {
       if (interior[0] && interior[0].url) {
-        mainEl.style.background = 'url(' + interior[0].url + ') no-repeat 28% center';
+        mainEl.style.background = 'url(' + interior[0].url + ') no-repeat center center';
       } else {
         ImageHelpers.applyBackgroundPlaceholder(mainEl);
       }
@@ -206,9 +219,18 @@
   // MAPPER: pages.room[matched].sections[0].hero.title → [data-room-intro]
   RoomMapper.prototype.mapIntro = function () {
     var rt = this.getCurrentRoomtype();
-    var roomPages = (this.getPages().room) || [];
-    var matched = rt && roomPages.filter(function (r) { return String(r.id) === String(rt.id); })[0];
-    var title = matched && matched.sections && matched.sections[0] && matched.sections[0].hero && matched.sections[0].hero.title;
+    var roomPages = this.getPages().room || [];
+    var matched =
+      rt &&
+      roomPages.filter(function (r) {
+        return String(r.id) === String(rt.id);
+      })[0];
+    var title =
+      matched &&
+      matched.sections &&
+      matched.sections[0] &&
+      matched.sections[0].hero &&
+      matched.sections[0].hero.title;
     setText('[data-room-intro]', title || '');
   };
 
@@ -221,7 +243,7 @@
     // 평형: rooms[j].size(㎡)를 평으로 환산 (1평=3.305785㎡, 소수 1자리) — sizePyeong 미전송 대비
     var sqm = room && room.size != null ? Number(room.size) : null;
     if (sqm != null && !isNaN(sqm)) {
-      setText('[data-room-size]', Math.round(sqm / 3.305785 * 10) / 10 + '평');
+      setText('[data-room-size]', Math.round((sqm / 3.305785) * 10) / 10 + '평');
     }
     if (room && room.amenities && room.amenities.length) {
       setText('[data-room-amenities]', room.amenities.join(', '));
@@ -260,48 +282,44 @@
   RoomMapper.prototype.mapRoomSlides = function () {
     var wrapper = document.querySelector('[data-room-list-slides]');
     if (!wrapper) return;
-    var roomtypes = this.getRoomtypes().filter(function (rt) {
-      return rt && rt.name && rt.name.trim();
-    });
+    var self = this;
     var rooms = (this.data && this.data.rooms) || [];
+    var roomtypes = this.getRoomtypes().filter(function (rt) {
+      if (!(rt && rt.name && rt.name.trim())) return false;
+      var matched = rooms.filter(function (r) { return r.id === rt.id; })[0];
+      return !(matched && matched.status === 'inactive');
+    });
+    var roomItems = this.getRoomMenuItems(roomtypes, function (rt) { return (rt && rt.name) || ''; });
 
     wrapper.innerHTML = '';
     if (!roomtypes.length) return;
 
-    roomtypes.forEach(function (rt) {
-      var thumbs = (rt.images || []).filter(function (im) {
-        return im.category === 'roomtype_thumbnail';
-      });
-      var sel = thumbs.filter(function (t) {
-        return t.isSelected;
-      });
-      var thumbUrl = (sel[0] && sel[0].url) || (thumbs[0] && thumbs[0].url) || '';
-
-      var matched = rooms.filter(function (r) {
-        return r.id === rt.id;
-      })[0];
+    roomItems.forEach(function (item) {
+      var rt = self.getRoomMenuRoomtype(item);
+      var roomLabel = self.getRoomMenuLabel(item);
+      if (!String(roomLabel).trim() || !rt) return;
+      var thumbs = (rt.images || []).filter(function (img) { return img.category === 'roomtype_thumbnail'; });
+      var selected = thumbs.filter(function (t) { return t.isSelected; });
+      var thumbUrl = (selected[0] && selected[0].url) || (thumbs[0] && thumbs[0].url) || '';
+      var matched = rooms.filter(function (r) { return r.id === rt.id; })[0];
       var structureText = buildRoomStructure(matched);
 
       var slide = document.createElement('div');
       slide.className = 'swiper-slide item';
       var a = document.createElement('a');
-      a.href = 'room.html?room_id=' + rt.id;
+      a.href = self.getRoomMenuLink(item);
       a.className = 'custom_mousemove';
       a.setAttribute('data-hover', 'Click');
 
       var img = document.createElement('div');
       img.className = 'img';
-      if (thumbUrl) {
-        img.style.background = 'url(' + thumbUrl + ') no-repeat 50%';
-        img.style.backgroundSize = 'cover';
-      } else {
-        ImageHelpers.applyBackgroundPlaceholder(img);
-      }
+      if (thumbUrl) { img.style.background = 'url(' + thumbUrl + ') no-repeat 50%'; img.style.backgroundSize = 'cover'; }
+      else { ImageHelpers.applyBackgroundPlaceholder(img); }
 
       var txt = document.createElement('div');
       txt.className = 'txt';
       txt.innerHTML = '<p class="btxt"></p><p class="stxt"></p>';
-      txt.querySelector('.btxt').textContent = rt.name || '';
+      txt.querySelector('.btxt').textContent = roomLabel;
       txt.querySelector('.stxt').textContent = structureText;
 
       a.appendChild(img);
