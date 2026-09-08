@@ -119,69 +119,63 @@
   LayoutMapMapper.prototype.mapNav = function () {
     var nav = document.querySelector('[data-room-list-nav]');
     if (!nav) return;
-    // 이전 생성분 제거 (preview 재렌더 대비)
-    nav.querySelectorAll('[data-generated="nav"]').forEach(function (li) {
-      li.remove();
-    });
-    this.getRoomtypes().forEach(function (rt) {
-      if (!rt.name || !rt.name.trim()) return;
+    nav.querySelectorAll('[data-generated="nav"]').forEach(function (li) { li.remove(); });
+    var self = this;
+    var roomItems = this.getRoomMenuItems(this.getRoomtypes(), function (rt) { return (rt && rt.name) || ''; });
+    roomItems.forEach(function (item) {
+      var name = self.getRoomMenuLabel(item);
+      if (!String(name).trim()) return;
       var li = document.createElement('li');
       li.setAttribute('data-generated', 'nav');
       var a = document.createElement('a');
-      a.href = 'room.html?room_id=' + rt.id;
-      a.textContent = rt.name;
+      a.href = self.getRoomMenuLink(item);
+      a.textContent = name;
       li.appendChild(a);
       nav.appendChild(li);
     });
   };
 
-  // MAPPER: customFields.roomtypes[] (+ rooms[] id매칭) → [data-room-list-slides] (미리보기 슬라이더)
   LayoutMapMapper.prototype.mapRoomSlides = function () {
     var wrapper = document.querySelector('[data-room-list-slides]');
     if (!wrapper) return;
-    var roomtypes = this.getRoomtypes().filter(function (rt) {
-      return rt && rt.name && rt.name.trim();
-    });
+    var self = this;
     var rooms = (this.data && this.data.rooms) || [];
+    var roomtypes = this.getRoomtypes().filter(function (rt) {
+      if (!(rt && rt.name && rt.name.trim())) return false;
+      var matched = rooms.filter(function (r) { return r.id === rt.id; })[0];
+      return !(matched && matched.status === 'inactive');
+    });
+    var roomItems = this.getRoomMenuItems(roomtypes, function (rt) { return (rt && rt.name) || ''; });
 
     wrapper.innerHTML = '';
     if (!roomtypes.length) return;
 
-    roomtypes.forEach(function (rt) {
-      var thumbs = (rt.images || []).filter(function (im) {
-        return im.category === 'roomtype_thumbnail';
-      });
-      var sel = thumbs.filter(function (t) {
-        return t.isSelected;
-      });
-      var thumbUrl = (sel[0] && sel[0].url) || (thumbs[0] && thumbs[0].url) || '';
-
-      var matched = rooms.filter(function (r) {
-        return r.id === rt.id;
-      })[0];
+    roomItems.forEach(function (item) {
+      var rt = self.getRoomMenuRoomtype(item);
+      var roomLabel = self.getRoomMenuLabel(item);
+      if (!String(roomLabel).trim() || !rt) return;
+      var thumbs = (rt.images || []).filter(function (img) { return img.category === 'roomtype_thumbnail'; });
+      var selected = thumbs.filter(function (t) { return t.isSelected; });
+      var thumbUrl = (selected[0] && selected[0].url) || (thumbs[0] && thumbs[0].url) || '';
+      var matched = rooms.filter(function (r) { return r.id === rt.id; })[0];
       var structureText = buildRoomStructure(matched);
 
       var slide = document.createElement('div');
       slide.className = 'swiper-slide item';
-
       var a = document.createElement('a');
-      a.href = 'room.html?room_id=' + rt.id;
+      a.href = self.getRoomMenuLink(item);
       a.className = 'custom_mousemove';
       a.setAttribute('data-hover', 'Click');
 
       var img = document.createElement('div');
       img.className = 'img';
-      if (thumbUrl) {
-        img.style.background = 'url(' + thumbUrl + ') no-repeat 50%';
-        img.style.backgroundSize = 'cover';
-      } else {
-        ImageHelpers.applyBackgroundPlaceholder(img);
-      }
+      if (thumbUrl) { img.style.background = 'url(' + thumbUrl + ') no-repeat 50%'; img.style.backgroundSize = 'cover'; }
+      else { ImageHelpers.applyBackgroundPlaceholder(img); }
 
       var txt = document.createElement('div');
       txt.className = 'txt';
       txt.innerHTML = '<p class="btxt"></p><p class="stxt"></p>';
-      txt.querySelector('.btxt').textContent = rt.name || '';
+      txt.querySelector('.btxt').textContent = roomLabel;
       txt.querySelector('.stxt').textContent = structureText;
 
       a.appendChild(img);
