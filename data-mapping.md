@@ -83,12 +83,13 @@ roomStructures[0] + "/ " + 값≥1인 항목들 나열
 >   하나라도 불충족이면 보정 없이 원본 로고를 그대로 쓴다(기존 동작).
 >   | `data-booking-link` | 예약하기 `<a>` (PC/aside/allmenu + 모바일 플로팅, href 직접 주입) | `property.realtimeBookingId` |
 >   | `data-ybs-button` | YBS `<a>` (PC/MO) | `property.ybsId` (없으면 숨김, `https://www.yapen.co.kr/external?ypIdx={ybsId}`) |
+>   | `data-ybs-badge` | 예약하기 위 「특가」 배지 `<img>` (PC/MO) | `property.ybsId` 가 있을 때만 노출 (기본 숨김) |
 >   | `data-rooms-submenu` | ROOMS 서브메뉴 컨테이너 `<ul>` (3곳) | — (동적 생성 기준점) |
 >   | `data-room-menu-link` | 미리보기 링크 (`/layout-map.html`) | — (동적 생성 앵커, 이 뒤에 객실 `<li>` 추가) |
 >   | `data-facility-menu-link` | SPECIAL 서브메뉴 컨테이너 `<ul>` (3곳) | `property.facilities[].name` (컨테이너 비우고 동적 생성) |
 >   | `data-menu-id="layout-map"` | ROOMS > 미리보기 `<li>`(=layout-map) | `customFields.pages.layoutMap.sections[0].enabled` (섹션 없음 / false면 숨김) |
 >   | `data-rooms-link` | 대메뉴 ROOMS `<a>` (PC lnb / 전체메뉴 2곳, 모바일 aside 는 링크 아님) | `customFields.pages.layoutMap.sections[0].enabled` (켜짐 → `layout-map.html` / 꺼짐 → 첫 객실 상세) |
->   | `data-allmenu-bg` | 전체메뉴(allmenu-wrap) 오버레이 배경 `.bg02` | `property.images[0].thumbnail[isSelected][0].url` (없으면 exterior → placeholder) |
+>   | `data-allmenu-bg` | 전체메뉴(allmenu-wrap) 오버레이 배경 `.bg02` | 홈페이지설정 썸네일 `customFields.property.images[category=property_thumbnail]` → 숙소설정 `property.images[0].thumbnail` → 홈페이지설정 외경 → 숙소설정 외경 → placeholder |
 >   | `data-travel-menu` | ABOUT > 주변관광지 `<li>` (3곳, 오시는길 아래) | `customFields.pages.nearbyAttractions.sections[0].enabled` (false면 숨김) |
 
 - ROOMS 서브메뉴: `customFields.roomtypes[].name` 기준 `<li><a href="room.html?room_id={id}">` 생성.
@@ -311,8 +312,8 @@ hero.images[isSelected] 기준:
 | `data-room-name`           | info `.btxt` + 표 객실명(PC/모바일)        | `roomtypes[current].name`                                                                            |
 | `data-room-structure`      | info `.stxt` + 표 유형(PC/모바일)          | `rooms[j].roomStructures[0] + "/ " + totalRoomCount 값≥1 한글` (id 매칭)                             |
 | `data-room-image-main`     | info `.fl .img p` (배경)                   | `roomtypes[current]` interior[0]                                                                     |
-| `data-room-thumbs`         | info `.fr ul` (li 배경, 2칸)               | `roomtypes[current]` interior 순서대로                                                               |
-| `data-room-thumbs-m`       | info `.mobile ul` (li>img, 2칸)            | `roomtypes[current]` interior 순서대로                                                               |
+| `data-room-thumbs`         | info `.fr ul` (li 배경, 2칸)               | `roomtypes[current]` interior 4·5번째(`[3]`, `[4]`)                                                  |
+| `data-room-thumbs-m`       | info `.mobile ul` (li>img, 2칸)            | PC 와 같은 interior 4·5번째(`[3]`, `[4]`) — 예전엔 1·2번째라 PC 와 사진이 달랐다                      |
 | `data-room-intro`          | `.inst h3`                                 | `rooms[j].roomInfo` (영문 `.stit`은 정적)                                                            |
 | `data-room-base-occupancy` | 표 기준(PC/모바일)                         | `rooms[j].baseOccupancy`                                                                             |
 | `data-room-max-occupancy`  | 표 최대(PC/모바일)                         | `rooms[j].maxOccupancy`                                                                              |
@@ -359,7 +360,7 @@ hero.images[isSelected] 기준:
 | `data-facility-name`        | `.special_wrap .info .txt .stxt`          | `facilities[current].name` (영문 `.btxt`='SPECIAL' 정적)                                                                 |
 | `data-facility-description` | `.special_wrap .info .ctxt p`             | `pages.facility[current.id].sections[0].about.title` 우선, 없으면 `facilities[current].description` fallback (\n→`<br>`) |
 | `data-facility-image`       | `.special_wrap .info .img p` (배경)       | `facilities[current].images[isSelected][0].url` (없으면 placeholder)                                                     |
-| `data-facility-gallery`     | `.special_wrap .list`                     | `facilities[current].images[isSelected]` (각 li p배경 순서대로)                                                          |
+| `data-facility-gallery`     | `.special_wrap .list`                     | `facilities[current].images[isSelected][1]`, `[2]` (조각컷 2칸, `[0]` 은 타원형 칸)                                     |
 | `data-index-special-slides` | `.main_special .spec-img .swiper-wrapper` | `property.facilities[]` (이미지 슬라이더, index와 동일)                                                                  |
 | `data-index-special-titles` | `.main_special .spec-tit`                 | `facilities[]` (stxt=name)                                                                                               |
 | `data-index-special-texts`  | `.main_special .spec-txt .swiper-wrapper` | `facilities[]` (`SPECIAL 0N` 번호만, 설명 미노출)                                                                                        |
@@ -377,9 +378,9 @@ hero.images[isSelected] 기준:
 | `data-reservation-hero-slides`       | `.sub_visual .svisual .swiper-wrapper` | `pages.reservation.sections[0].hero.images[isSelected]` (배경 슬라이드)                                |
 | `data-reservation-title`             | `.sub_title .sub_txt`                  | `pages.reservation.sections[0].hero.title` (없으면 `예약시 참고하실 내용을 안내해 드립니다.` fallback) |
 | `data-booking-link`                  | `#snb_wrap` 예약하기 `<a>`             | `property.realtimeBookingId` (header-footer-mapper 공통 처리)                                          |
-| `data-reservation-checkin-info`      | 이용안내 dd `<p>` (입퇴실)             | `[입퇴실안내]` 라벨 + `property.checkin`/`checkout`/`checkInOutInfo`                                   |
+| `data-reservation-checkin-info`      | 이용안내 dd `<p>` (입퇴실)             | `checkInOutInfo` (없으면 `checkin`/`checkout` 으로 `[입퇴실안내]` 생성). `usageGuide` 에 이미 들어 있으면 숨김 |
 | `data-reservation-usage-guide`       | 이용안내 dd `<p>` (이용)               | `property.usageGuide` (\n→`<br>`)                                                                      |
-| `data-reservation-reservation-guide` | 이용안내 dd `<p>` (예약)               | `property.reservationGuide` (\n→`<br>`)                                                                |
+| `data-reservation-reservation-guide` | 이용안내 dd `<p>` (예약)               | `property.reservationGuide` (\n→`<br>`). `usageGuide` 에 같은 내용이 있으면 숨김                        |
 | `data-reservation-refund-policies`   | 환불안내 dd                            | `property.refundPolicies[]` (동적: `* 이용일 N일 이전 취소시 R% 환불`)                                 |
 
 - snb 이용안내 항목은 현재 페이지라 정적 active. 환불 당일(`refundProcessingDays===0`)은 `* 당일 취소시 R% 환불`.
