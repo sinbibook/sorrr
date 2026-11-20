@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "version": "1.23.0",
-    "generatedAt": "2026-11-20T05:24:53.371586886Z",
+    "version": "1.24.0",
+    "generatedAt": "2026-11-20T05:25:28.839363283Z",
     "templateType": "trip_d",
     "propertyId": "f42309ba-2dc5-4629-8cc3-7fb3fd10e54f",
     "homepageId": "6939fcf4-a350-48ad-831a-4afed6fea8c6"
@@ -2440,8 +2440,8 @@
                 "title": "여수 소르르 스파 오션뷰 펜션에 찾아 오시는 길을 안내해 드립니다.",
                 "images": [
                   {
-                    "id": "01a1f76a-2442-7068-a019-43fed3256aad",
-                    "url": "https://jlnjajtcnyqupfaqjerz.supabase.co/storage/v1/object/public/app-images/homepage/6939fcf4-a350-48ad-831a-4afed6fea8c6/directions_hero/1795152290400-pl8wpqq9j1.jpg",
+                    "id": "01a1f76a-b087-7ee7-8d2d-38218c0362df",
+                    "url": "https://jlnjajtcnyqupfaqjerz.supabase.co/storage/v1/object/public/app-images/homepage/6939fcf4-a350-48ad-831a-4afed6fea8c6/directions_hero/1795152326529-91qsygc17k.jpg",
                     "sortOrder": 0,
                     "description": "",
                     "isSelected": true,
